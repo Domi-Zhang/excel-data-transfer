@@ -1,6 +1,9 @@
 ﻿using Microsoft.Win32;
+using NPOI.HSSF.UserModel;
+using NPOI.SS.UserModel;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,52 +32,30 @@ namespace excel_data_transfer
         private void btn_fileName_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
-            dlg.DefaultExt = ".xlsx";
-            dlg.Filter = "*.xlsx";
+            dlg.Filter = "Excel files (*.xls,*.xlsx)|*.xls;*.xlsx";
 
             Nullable<bool> result = dlg.ShowDialog();
             if (result == true)
             {
-                using (FileStream stream = newFileStream(@"C:\Users\Administrator\Desktop\Book1.xls",FileMode.Open, FileAccess.Read))
-
-            {
-
-                //创建一个工作薄
-
-                HSSFWorkbook workbook = newHSSFWorkbook(stream);
-
-                //创建表的实例指向文件流工作薄的第一个表
-
-                HSSFSheet hs =workbook.GetSheet(workbook.GetSheetName(0));
-
-                for (int i = 0; i < 5; i++)
-
+                using (FileStream stream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read))
                 {
+                    IWorkbook workbook = new HSSFWorkbook(stream);
+                    ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
 
-                    for (int j = 0; j < 2;j++)
-
+                    for (int i = 0; i < 5; i++)
                     {
-
-                        创建行的实例
-
-                        HSSFRow hr =hs.GetRow(i);
-
-                        //创建列的实例
-
-                        HSSFCell hc =hr.GetCell(j);
-
-                        Console.Write(hc.ToString()+"   ");
-
+                        for (int j = 0; j < 2; j++)
+                        {
+                            IRow hr = hs.GetRow(i);
+                            ICell hc = hr.GetCell(j);
+                            Console.Write(hc.ToString() + "   ");
+                        }
+                        Console.WriteLine();
                     }
-
-                    Console.WriteLine();
-
                 }
-
-            }
-
-        }
             }
         }
     }
+
 }
+
