@@ -42,15 +42,11 @@ namespace excel_data_transfer
                     IWorkbook workbook = new HSSFWorkbook(stream);
                     ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
 
-                    for (int i = 0; i < 5; i++)
+                    IRow header = hs.GetRow(0);
+                    List<ICell> headerCells = header.Cells;
+                    foreach (ICell cell in headerCells)
                     {
-                        for (int j = 0; j < 2; j++)
-                        {
-                            IRow hr = hs.GetRow(i);
-                            ICell hc = hr.GetCell(j);
-                            Console.Write(hc.ToString() + "   ");
-                        }
-                        Console.WriteLine();
+                        Console.Write(cell + " ");
                     }
                 }
             }
