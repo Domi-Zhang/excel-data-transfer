@@ -1,0 +1,9 @@
+﻿<Window x:Class="excel_data_transfer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="600" Width="800">
+    <Grid>
+        <Button Content="选取源文件" Height="22" HorizontalAlignment="Left" Margin="10,10,0,0"
+                Name="btn_fileName" VerticalAlignment="Top" Width="68" Click="btn_fileName_Click" />
+    </Grid>
+</Window>
