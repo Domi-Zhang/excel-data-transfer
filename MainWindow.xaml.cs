@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -29,7 +28,12 @@ namespace excel_data_transfer
             InitializeComponent();
         }
 
-        private void btn_fileName_Click(object sender, RoutedEventArgs e)
+        private void btn_addTgtFileName_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void btn_addSrcFileName_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "Excel files (*.xls,*.xlsx)|*.xls;*.xlsx";
@@ -44,13 +48,25 @@ namespace excel_data_transfer
 
                     IRow header = hs.GetRow(0);
                     List<ICell> headerCells = header.Cells;
-                    foreach (ICell cell in headerCells)
+                    List<ColumnMapping> mappingList = new List<ColumnMapping>();
+
+                    for (int i = 0; i < headerCells.Count; i++)
                     {
-                        Console.Write(cell + " ");
+                        mappingList.Add(new ColumnMapping() { SourceIndex=i, SourceName=headerCells[i].ToString() });
                     }
+
+                    GridView gvMapping = new GridView();
+                    gvMapping.Columns.Add(new GridViewColumn(){ DisplayMemberBinding=new Binding("SourceName"), Header="原始列名"});
+
+                    ListView lvMapping=new ListView();
+                    lvMapping.ItemsSource=mappingList;
+                    lvMapping.View=gvMapping;
+
+                    sp_columnMapping.Children.Add(lvMapping);
                 }
             }
         }
+
     }
 
 }

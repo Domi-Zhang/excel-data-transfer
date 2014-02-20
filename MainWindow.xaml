@@ -3,7 +3,27 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="600" Width="800">
     <Grid>
-        <Button Content="选取源文件" Height="22" HorizontalAlignment="Left" Margin="10,10,0,0"
-                Name="btn_fileName" VerticalAlignment="Top" Width="68" Click="btn_fileName_Click" />
+        <Button Content="添加源文件" Height="22" HorizontalAlignment="Left" Margin="55,0,0,0"
+                Name="btn_addSrcFileName" VerticalAlignment="Top" Width="68" Click="btn_addSrcFileName_Click" />
+        <Button Content="添加目标文件" Height="22" HorizontalAlignment="Left" Margin="642,0,0,0"
+        	x:Name="btn_addTgtFileName" VerticalAlignment="Top" Width="77" Click="btn_addTgtFileName_Click"/>
+
+        <StackPanel HorizontalAlignment="Left" Height="550" Margin="190,10,0,0" VerticalAlignment="Top" Width="395" x:Name="sp_columnMapping">
+        </StackPanel>
+        <ListView HorizontalAlignment="Left" Height="100" Margin="39,39,0,0" VerticalAlignment="Top" Width="100">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <ListView HorizontalAlignment="Left" Height="100" Margin="633,39,0,0" VerticalAlignment="Top" Width="100">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
     </Grid>
 </Window>
