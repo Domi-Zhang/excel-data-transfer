@@ -4,7 +4,6 @@ using NPOI.SS.UserModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,20 +22,32 @@ namespace excel_data_transfer
     /// </summary>
     public partial class MainWindow : Window
     {
+        private List<ColumnMapping> mappingConfigs = new List<ColumnMapping>();
+
         public MainWindow()
         {
             InitializeComponent();
 
-            List<ColumnMapping> mappingConfigs=new List<ColumnMapping>();
+            try
+            {
+                init();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("程序初始化失败: \r\n\r\n" + ex);
+                return;
+            }
+        }
 
-            string[] configs=File.ReadAllLines("mapping.txt");
+        private void init()
+        {
+            string[] configs = File.ReadAllLines("mapping.txt");
             for (int i = 0; i < configs.Length; i++)
-			{
-                string[] config=configs[i].Split(' ');
-			    ColumnMapping columnMapping=new ColumnMapping(){ IsPrimaryKey=i==0, SourceName=config[0], TargetName=config[1]};
+            {
+                string[] config = configs[i].Split(new char[] { ' ' });
+                ColumnMapping columnMapping = new ColumnMapping() { IsPrimaryKey = i == 0, SourceName = config[0], TargetName = config[1] };
                 mappingConfigs.Add(columnMapping);
             }
-            
 
             GridView gvMapping = new GridView();
             gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceName"), Header = "原始列名" });
