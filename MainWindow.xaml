@@ -8,13 +8,13 @@
         <Button Content="添加目标文件" Height="22" HorizontalAlignment="Left" Margin="770,22.222,0,0"
         	x:Name="btn_addTgtFileName" VerticalAlignment="Top" Width="77" Click="btn_addTgtFileName_Click" RenderTransformOrigin="0.792,0.535"/>
 
-        <StackPanel HorizontalAlignment="Left" Height="550" Margin="321,16,0,0" VerticalAlignment="Top" Width="344" x:Name="sp_columnMapping">
+        <StackPanel HorizontalAlignment="Left" Height="550" Margin="299.014,16,0,0" VerticalAlignment="Top" Width="382.493" x:Name="sp_columnMapping">
         </StackPanel>
 
-        <Border BorderBrush="Black" BorderThickness="1" Margin="19,61,695,350.778">
+        <Border BorderBrush="Black" BorderThickness="1" Margin="13.028,61,700.972,350.778">
             <StackPanel Height="236.222" Margin="9,10,9,0" VerticalAlignment="Top" x:Name="sp_sourceFileNames"/>
         </Border>
-        <Border BorderBrush="Black" BorderThickness="1" Margin="688,61,21,350.778">
+        <Border BorderBrush="Black" BorderThickness="1" Margin="693.972,61,15.028,350.778">
             <StackPanel Height="236.222" Margin="9,10,9,0" VerticalAlignment="Top" x:Name="sp_targetFileNames"/>
         </Border>
 

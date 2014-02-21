@@ -2,6 +2,7 @@
 using NPOI.HSSF.UserModel;
 using NPOI.SS.UserModel;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -23,6 +24,7 @@ namespace excel_data_transfer
     public partial class MainWindow : Window
     {
         private List<ColumnMapping> mappingConfigs = new List<ColumnMapping>();
+        private Dictionary<string, ColumnMapping> srcColumnConfigMapping = new Dictionary<string, ColumnMapping>();
 
         public MainWindow()
         {
@@ -44,14 +46,19 @@ namespace excel_data_transfer
             string[] configs = File.ReadAllLines("mapping.txt");
             for (int i = 0; i < configs.Length; i++)
             {
-                string[] config = configs[i].Split(new char[] { ' ' });
-                ColumnMapping columnMapping = new ColumnMapping() { IsPrimaryKey = i == 0, SourceName = config[0], TargetName = config[1] };
+                string[] config = configs[i].Split(new char[] { ' ','\t' }, StringSplitOptions.RemoveEmptyEntries);
+                ColumnMapping columnMapping = new ColumnMapping() { SourceFile=config[0], SourceName = config[1], TargetName = config[2] };
                 mappingConfigs.Add(columnMapping);
+            }
+            foreach (ColumnMapping mapping in mappingConfigs)
+            {
+                srcColumnConfigMapping.Add(mapping.SourceName, mapping);
             }
 
             GridView gvMapping = new GridView();
-            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceName"), Header = "原始列名" });
-            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("TargetName"), Header = "目标列名" });
+            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceFile") { Mode = BindingMode.TwoWay }, Header = "原始文件名" });
+            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceName") { Mode = BindingMode.TwoWay }, Header = "原始列名" });
+            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("TargetName") { Mode = BindingMode.TwoWay }, Header = "目标列名" });
 
             ListView lvMapping = new ListView();
             lvMapping.ItemsSource = mappingConfigs;
@@ -81,33 +88,66 @@ namespace excel_data_transfer
             if (result == true)
             {
                 sp_sourceFileNames.Children.Add(new TextBlock() { Text = dlg.SafeFileName });
+                readExcelToDatabase(dlg, sourceDatabase);
             }
         }
 
-        //using (FileStream stream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read))
-        //        {
-        //            IWorkbook workbook = new HSSFWorkbook(stream);
-        //            ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
+        private Dictionary<string, Dictionary<string, object>> sourceDatabase = new Dictionary<string, Dictionary<string, object>>();
 
-        //            IRow header = hs.GetRow(0);
-        //            List<ICell> headerCells = header.Cells;
-        //            List<ColumnMapping> mappingList = new List<ColumnMapping>();
+        private void readExcelToDatabase(OpenFileDialog dlg, Dictionary<string, Dictionary<string, object>> databse)
+        {
+            using (FileStream stream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read))
+            {
+                IWorkbook workbook = new HSSFWorkbook(stream);
+                ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
 
-        //            for (int i = 0; i < headerCells.Count; i++)
-        //            {
-        //                mappingList.Add(new ColumnMapping() { SourceIndex = i, SourceName = headerCells[i].ToString() });
-        //            }
+                List<ICell> headerCells=null;
 
-        //            GridView gvMapping = new GridView();
-        //            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceName"), Header = "原始列名" });
+                IEnumerator rowEnumerator = hs.GetRowEnumerator();
+                while (rowEnumerator.MoveNext())
+                {
+                    IRow currentRow = (IRow)rowEnumerator.Current;
+                    List<ICell> cells = currentRow.Cells;
+                    if (headerCells==null) 
+                    {
+                        headerCells = cells;
+                        continue;
+                    }
 
-        //            ListView lvMapping = new ListView();
-        //            lvMapping.ItemsSource = mappingList;
-        //            lvMapping.View = gvMapping;
+                    Dictionary<string, object> extractedRow=null;
+                    for (int i = 0; i < cells.Count; i++)
+                    {
+                        ICell header = headerCells[i];
+                        string headerName = header.ToString();
+                        if (headerName == mappingConfigs[0].SourceName) 
+                        {
+                            string keyName=cells[i].StringCellValue;
+                            if (!databse.ContainsKey(keyName))
+                            {
+                                extractedRow = new Dictionary<string, object>();
+                                databse.Add(cells[i].StringCellValue, extractedRow);
+                            }
+                            else 
+                            {
+                                extractedRow=databse[keyName];
+                            }
+                            break;
+                        }
+                    }
 
-        //            sp_columnMapping.Children.Add(lvMapping);
-        //        }
-
+                    for (int i = 0; i < cells.Count; i++)
+                    {
+                        ICell header = headerCells[i];
+                        string headerName = header.ToString();
+                        ColumnMapping columnMappingConfig = srcColumnConfigMapping[headerName];
+                        if (columnMappingConfig.SourceFile == dlg.SafeFileName)
+                        {
+                            extractedRow.Add(columnMappingConfig.TargetName, cells[i].StringCellValue);
+                        }
+                    }
+                }
+            }
+        }
     }
 
 }
