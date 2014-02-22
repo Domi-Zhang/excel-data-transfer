@@ -100,53 +100,55 @@ namespace excel_data_transfer
             {
                 IWorkbook workbook = new HSSFWorkbook(stream);
                 ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
-
-                List<ICell> headerCells=null;
+                List<ICell> headerCells = hs.GetRow(0).Cells;
 
                 IEnumerator rowEnumerator = hs.GetRowEnumerator();
                 while (rowEnumerator.MoveNext())
                 {
-                    IRow currentRow = (IRow)rowEnumerator.Current;
-                    List<ICell> cells = currentRow.Cells;
-                    if (headerCells==null) 
-                    {
-                        headerCells = cells;
-                        continue;
-                    }
-
-                    Dictionary<string, object> extractedRow=null;
-                    for (int i = 0; i < cells.Count; i++)
-                    {
-                        ICell header = headerCells[i];
-                        string headerName = header.ToString();
-                        if (headerName == mappingConfigs[0].SourceName) 
-                        {
-                            string keyName=cells[i].StringCellValue;
-                            if (!databse.ContainsKey(keyName))
-                            {
-                                extractedRow = new Dictionary<string, object>();
-                                databse.Add(cells[i].StringCellValue, extractedRow);
-                            }
-                            else 
-                            {
-                                extractedRow=databse[keyName];
-                            }
-                            break;
-                        }
-                    }
-
-                    for (int i = 0; i < cells.Count; i++)
-                    {
-                        ICell header = headerCells[i];
-                        string headerName = header.ToString();
-                        ColumnMapping columnMappingConfig = srcColumnConfigMapping[headerName];
-                        if (columnMappingConfig.SourceFile == dlg.SafeFileName)
-                        {
-                            extractedRow.Add(columnMappingConfig.TargetName, cells[i].StringCellValue);
-                        }
-                    }
+                    List<ICell> cells = ((IRow)rowEnumerator.Current).Cells;
+                    Dictionary<string, object> extractedRow = tryGetExtractedRowByKeyName(databse, headerCells, cells);
+                    extractDataToRow(dlg.SafeFileName, headerCells, cells, extractedRow);
                 }
             }
+        }
+
+        private void extractDataToRow(string fileName, List<ICell> headerCells, List<ICell> cells, Dictionary<string, object> extractedRow)
+        {
+            for (int i = 0; i < cells.Count; i++)
+            {
+                ICell header = headerCells[i];
+                string headerName = header.ToString();
+                ColumnMapping columnMappingConfig = srcColumnConfigMapping[headerName];
+                if (columnMappingConfig.SourceFile == fileName)
+                {
+                    extractedRow.Add(columnMappingConfig.TargetName, cells[i].StringCellValue);
+                }
+            }
+        }
+
+        private Dictionary<string, object> tryGetExtractedRowByKeyName(Dictionary<string, Dictionary<string, object>> databse, List<ICell> headerCells, List<ICell> cells)
+        {
+            Dictionary<string, object> extractedRow = null;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                ICell header = headerCells[i];
+                string headerName = header.ToString();
+                if (headerName == mappingConfigs[0].SourceName)
+                {
+                    string keyName = cells[i].StringCellValue;
+                    if (!databse.ContainsKey(keyName))
+                    {
+                        extractedRow = new Dictionary<string, object>();
+                        databse.Add(cells[i].StringCellValue, extractedRow);
+                    }
+                    else
+                    {
+                        extractedRow = databse[keyName];
+                    }
+                    break;
+                }
+            }
+            return extractedRow;
         }
     }
 
