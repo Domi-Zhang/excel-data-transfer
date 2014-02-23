@@ -3,12 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="700" Width="1000" >
     <Grid>
-        <Button Content="添加源文件" Height="22" HorizontalAlignment="Left" Margin="113,22.222,0,0"
-                Name="btn_addSrcFileName" VerticalAlignment="Top" Width="68" Click="btn_addSrcFileName_Click" />
-        <Button Content="添加目标文件" Height="22" HorizontalAlignment="Left" Margin="770,22.222,0,0"
-        	x:Name="btn_addTgtFileName" VerticalAlignment="Top" Width="77" Click="btn_addTgtFileName_Click" RenderTransformOrigin="0.792,0.535"/>
+        <Button Content="添加源文件" Height="22" HorizontalAlignment="Left" Margin="13.028,25.356,0,0"
+                x:Name="btn_addSrcFileName" VerticalAlignment="Top" Width="68" Click="btn_addSrcFileName_Click" />
+        <Button Content="添加模板文件" Height="22" HorizontalAlignment="Left" Margin="693.972,24.334,0,0"
+        	    x:Name="btn_addTgtFileName" VerticalAlignment="Top" Width="77" Click="btn_addTgtFileName_Click" RenderTransformOrigin="0.792,0.535"/>
+        <Button Content="选择输出文件夹" Height="22" HorizontalAlignment="Left" Margin="695.465,334.289,0,0"
+        	x:Name="btn_addTgtFolder" VerticalAlignment="Top" Width="94.911" RenderTransformOrigin="0.792,0.535" Click="btn_addTgtFolder_Click"/>
 
-        <StackPanel HorizontalAlignment="Left" Height="550" Margin="299.014,16,0,0" VerticalAlignment="Top" Width="382.493" x:Name="sp_columnMapping">
+        <StackPanel HorizontalAlignment="Left" Height="550" Margin="299.014,62.283,0,0" VerticalAlignment="Top" Width="382.493" x:Name="sp_columnMapping">
         </StackPanel>
 
         <Border BorderBrush="Black" BorderThickness="1" Margin="13.028,61,700.972,350.778">
@@ -17,6 +19,11 @@
         <Border BorderBrush="Black" BorderThickness="1" Margin="693.972,61,15.028,350.778">
             <StackPanel Height="236.222" Margin="9,10,9,0" VerticalAlignment="Top" x:Name="sp_targetFileNames"/>
         </Border>
+        <Button Content="Start" x:Name="btn_transfer" HorizontalAlignment="Left" Margin="299.014,24.334,0,0" VerticalAlignment="Top" Width="75" Click="btn_transfer_Click"/>
+        <Label Content="处理进度:" HorizontalAlignment="Left" Margin="403.453,21.094,0,0" VerticalAlignment="Top"/>
+        <TextBlock x:Name="txt_transfer" HorizontalAlignment="Left" Margin="466.357,28.401,0,0" TextWrapping="Wrap" Text="0/0" VerticalAlignment="Top"/>
+        <Label Content="输出文件夹:" HorizontalAlignment="Left" Margin="692.477,361.286,0,0" VerticalAlignment="Top"/>
+        <TextBlock x:Name="txt_targetFolder" HorizontalAlignment="Left" Margin="765.367,366.807,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
 
     </Grid>
 </Window>

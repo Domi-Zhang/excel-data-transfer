@@ -15,6 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using FolderBrowserDialog = System.Windows.Forms.FolderBrowserDialog;
 
 namespace excel_data_transfer
 {
@@ -23,6 +24,7 @@ namespace excel_data_transfer
     /// </summary>
     public partial class MainWindow : Window
     {
+        private ColumnMapping keyMapping;
         private List<ColumnMapping> mappingConfigs = new List<ColumnMapping>();
         private Dictionary<string, ColumnMapping> srcColumnConfigMapping = new Dictionary<string, ColumnMapping>();
 
@@ -46,9 +48,16 @@ namespace excel_data_transfer
             string[] configs = File.ReadAllLines("mapping.txt");
             for (int i = 0; i < configs.Length; i++)
             {
-                string[] config = configs[i].Split(new char[] { ' ','\t' }, StringSplitOptions.RemoveEmptyEntries);
-                ColumnMapping columnMapping = new ColumnMapping() { SourceFile=config[0], SourceName = config[1], TargetName = config[2] };
-                mappingConfigs.Add(columnMapping);
+                string[] config = configs[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                if (keyMapping == null)
+                {
+                    keyMapping = new ColumnMapping() { SourceFile = config[0], SourceName = config[1], TargetName = config[2] };
+                }
+                else
+                {
+                    ColumnMapping columnMapping = new ColumnMapping() { SourceFile = config[0], SourceName = config[1], TargetName = config[2] };
+                    mappingConfigs.Add(columnMapping);
+                }
             }
             foreach (ColumnMapping mapping in mappingConfigs)
             {
@@ -67,6 +76,7 @@ namespace excel_data_transfer
             sp_columnMapping.Children.Add(lvMapping);
         }
 
+        private Dictionary<string, string> tgtFileDict = new Dictionary<string, string>();
         private void btn_addTgtFileName_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dlg = new OpenFileDialog();
@@ -76,6 +86,7 @@ namespace excel_data_transfer
             if (result == true)
             {
                 sp_targetFileNames.Children.Add(new TextBlock() { Text = dlg.SafeFileName });
+                tgtFileDict.Add(dlg.SafeFileName, dlg.FileName);
             }
         }
 
@@ -96,18 +107,39 @@ namespace excel_data_transfer
 
         private void readExcelToDatabase(OpenFileDialog dlg, Dictionary<string, Dictionary<string, object>> databse)
         {
-            using (FileStream stream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read))
+            stepThroughExcel(dlg.FileName, (Dictionary<string, object> extractedRow, string rowKey, List<ICell> headerCells, List<ICell> cells) =>
+            {
+                if (extractedRow == null)
+                {
+                    sourceDatabase.Add(rowKey, (extractedRow = new Dictionary<string, object>()));
+                }
+                extractDataToRow(dlg.SafeFileName, headerCells, cells, extractedRow);
+            },
+            null);
+        }
+
+        private void stepThroughExcel(string fileName, Action<Dictionary<string, object>, string, List<ICell>, List<ICell>> action, Action<IWorkbook> finish)
+        {
+            using (FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
             {
                 IWorkbook workbook = new HSSFWorkbook(stream);
                 ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
                 List<ICell> headerCells = hs.GetRow(0).Cells;
+                int keyColumn = getKeyColumnIndex(headerCells, keyMapping.SourceFile);
 
                 IEnumerator rowEnumerator = hs.GetRowEnumerator();
+                rowEnumerator.MoveNext();//跳过列首
                 while (rowEnumerator.MoveNext())
                 {
                     List<ICell> cells = ((IRow)rowEnumerator.Current).Cells;
-                    Dictionary<string, object> extractedRow = tryGetExtractedRowByKeyName(databse, headerCells, cells);
-                    extractDataToRow(dlg.SafeFileName, headerCells, cells, extractedRow);
+                    string rowKey = cells[keyColumn].StringCellValue;
+                    Dictionary<string, object> extractedRow = sourceDatabase[rowKey];
+                    action(extractedRow, rowKey, headerCells, cells);
+                }
+
+                if (finish != null) 
+                {
+                    finish(workbook);
                 }
             }
         }
@@ -126,29 +158,53 @@ namespace excel_data_transfer
             }
         }
 
-        private Dictionary<string, object> tryGetExtractedRowByKeyName(Dictionary<string, Dictionary<string, object>> databse, List<ICell> headerCells, List<ICell> cells)
+        private void btn_transfer_Click(object sender, RoutedEventArgs e)
         {
-            Dictionary<string, object> extractedRow = null;
-            for (int i = 0; i < cells.Count; i++)
+            foreach (KeyValuePair<string,string> tgtFile in tgtFileDict)
             {
-                ICell header = headerCells[i];
-                string headerName = header.ToString();
-                if (headerName == mappingConfigs[0].SourceName)
+                stepThroughExcel(tgtFile.Value, (Dictionary<string, object> extractedRow, string rowKey, List<ICell> headerCells, List<ICell> cells) =>
                 {
-                    string keyName = cells[i].StringCellValue;
-                    if (!databse.ContainsKey(keyName))
+                    for (int i = 0; i < cells.Count; i++)
                     {
-                        extractedRow = new Dictionary<string, object>();
-                        databse.Add(cells[i].StringCellValue, extractedRow);
+                        object srcValue = extractedRow[headerCells[i].StringCellValue];
+                        if (srcValue != null)
+                        {
+                            cells[i].SetCellValue(srcValue.ToString());
+                        }
                     }
-                    else
-                    {
-                        extractedRow = databse[keyName];
-                    }
+                }, (IWorkbook workbook) => 
+                {
+                    FileStream writeStream = new FileStream(targetFolder+"/"+tgtFile.Key, FileMode.OpenOrCreate, FileAccess.Write);
+                    workbook.Write(writeStream);
+                    writeStream.Close();
+                });
+            }
+        }
+
+        private int getKeyColumnIndex(List<ICell> headerCells, string keyColumnName)
+        {
+            int keyColumn = -1;
+            for (int i = 0; i < headerCells.Count; i++)
+            {
+                string columnName = headerCells[i].StringCellValue;
+                if (columnName == keyColumnName)
+                {
+                    keyColumn = i;
                     break;
                 }
             }
-            return extractedRow;
+            return keyColumn;
+        }
+
+        private string targetFolder;
+        private void btn_addTgtFolder_Click(object sender, RoutedEventArgs e)
+        {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+            if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                targetFolder = fbd.SelectedPath;
+                txt_targetFolder.Text = targetFolder;
+            }
         }
     }
 
