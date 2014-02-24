@@ -7,7 +7,7 @@ namespace excel_data_transfer
     class ColumnMapping
     {
         public string SourceFile { get; set; }
-        public string SourceName { get; set; }
-        public string TargetName { get; set; }
+        public string[] SourceNames { get; set; }
+        public string[] TargetNames { get; set; }
     }
 }

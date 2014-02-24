@@ -10,8 +10,15 @@
         <Button Content="选择输出文件夹" Height="22" HorizontalAlignment="Left" Margin="695.465,334.289,0,0"
         	x:Name="btn_addTgtFolder" VerticalAlignment="Top" Width="94.911" RenderTransformOrigin="0.792,0.535" Click="btn_addTgtFolder_Click"/>
 
-        <StackPanel HorizontalAlignment="Left" Height="550" Margin="299.014,62.283,0,0" VerticalAlignment="Top" Width="382.493" x:Name="sp_columnMapping">
-        </StackPanel>
+        <ListView HorizontalAlignment="Left" Height="363.993" Margin="296.028,61,0,0" VerticalAlignment="Top" Width="391.449" x:Name="lv_columnMapping">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding SourceFile, Mode=TwoWay}" Header="源文件名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding SourceName, Mode=TwoWay}" Header="源列名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding TargetName, Mode=TwoWay}" Header="目标列名"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
 
         <Border BorderBrush="Black" BorderThickness="1" Margin="13.028,61,700.972,350.778">
             <StackPanel Height="236.222" Margin="9,10,9,0" VerticalAlignment="Top" x:Name="sp_sourceFileNames"/>
@@ -19,11 +26,20 @@
         <Border BorderBrush="Black" BorderThickness="1" Margin="693.972,61,15.028,350.778">
             <StackPanel Height="236.222" Margin="9,10,9,0" VerticalAlignment="Top" x:Name="sp_targetFileNames"/>
         </Border>
-        <Button Content="Start" x:Name="btn_transfer" HorizontalAlignment="Left" Margin="299.014,24.334,0,0" VerticalAlignment="Top" Width="75" Click="btn_transfer_Click"/>
+        <Button Content="Start" x:Name="btn_transfer" HorizontalAlignment="Left" Margin="296.028,24.334,0,0" VerticalAlignment="Top" Width="75" Click="btn_transfer_Click"/>
         <Label Content="处理进度:" HorizontalAlignment="Left" Margin="403.453,21.094,0,0" VerticalAlignment="Top"/>
         <TextBlock x:Name="txt_transfer" HorizontalAlignment="Left" Margin="466.357,28.401,0,0" TextWrapping="Wrap" Text="0/0" VerticalAlignment="Top"/>
         <Label Content="输出文件夹:" HorizontalAlignment="Left" Margin="692.477,361.286,0,0" VerticalAlignment="Top"/>
         <TextBlock x:Name="txt_targetFolder" HorizontalAlignment="Left" Margin="765.367,366.807,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <ListView HorizontalAlignment="Left" Height="197.015" Margin="296.028,442.985,0,0" VerticalAlignment="Top" Width="388.463" x:Name="lv_excelConfig">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding FileName, Mode=TwoWay}" Header="文件名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding TitleRow, Mode=TwoWay}" Header="标题行号(0表示无标题)"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
 
     </Grid>
 </Window>

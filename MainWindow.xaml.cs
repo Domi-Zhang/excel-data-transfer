@@ -25,8 +25,8 @@ namespace excel_data_transfer
     public partial class MainWindow : Window
     {
         private ColumnMapping keyMapping;
-        private List<ColumnMapping> mappingConfigs = new List<ColumnMapping>();
         private Dictionary<string, ColumnMapping> srcColumnConfigMapping = new Dictionary<string, ColumnMapping>();
+        private Dictionary<string, ExcelConfig> excelConfigDict = new Dictionary<string, ExcelConfig>();
 
         public MainWindow()
         {
@@ -45,35 +45,35 @@ namespace excel_data_transfer
 
         private void init()
         {
-            string[] configs = File.ReadAllLines("mapping.txt");
-            for (int i = 0; i < configs.Length; i++)
+            string[] mappingConfigs = File.ReadAllLines("column-mapping.txt");
+            for (int i = 0; i < mappingConfigs.Length; i++)
             {
-                string[] config = configs[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] configInfo = mappingConfigs[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                 if (keyMapping == null)
                 {
-                    keyMapping = new ColumnMapping() { SourceFile = config[0], SourceName = config[1], TargetName = config[2] };
+                    keyMapping = new ColumnMapping() { SourceFile = configInfo[0], SourceNames = configInfo[1].Split('|'), TargetNames = configInfo[2].Split('|') };
                 }
                 else
                 {
-                    ColumnMapping columnMapping = new ColumnMapping() { SourceFile = config[0], SourceName = config[1], TargetName = config[2] };
-                    mappingConfigs.Add(columnMapping);
+                    ColumnMapping columnMapping = new ColumnMapping() { SourceFile = configInfo[0], SourceNames = configInfo[1].Split('|'), TargetNames = configInfo[2].Split('|') };
+                    foreach (string srcColumn in columnMapping.SourceNames)
+                    {
+                        srcColumnConfigMapping.Add(srcColumn, columnMapping);
+                    }
+                    
                 }
             }
-            foreach (ColumnMapping mapping in mappingConfigs)
+
+            string[] excelConfigs = File.ReadAllLines("excel-config.txt");
+            for (int i = 0; i < excelConfigs.Length; i++)
             {
-                srcColumnConfigMapping.Add(mapping.SourceName, mapping);
+                string[] configInfo = excelConfigs[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                ExcelConfig tgtConfig = new ExcelConfig() { FileName=configInfo[0], HeaderRow=int.Parse(configInfo[1]) };
+                excelConfigDict.Add(tgtConfig.FileName, tgtConfig);
             }
 
-            GridView gvMapping = new GridView();
-            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceFile") { Mode = BindingMode.TwoWay }, Header = "原始文件名" });
-            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("SourceName") { Mode = BindingMode.TwoWay }, Header = "原始列名" });
-            gvMapping.Columns.Add(new GridViewColumn() { DisplayMemberBinding = new Binding("TargetName") { Mode = BindingMode.TwoWay }, Header = "目标列名" });
-
-            ListView lvMapping = new ListView();
-            lvMapping.ItemsSource = mappingConfigs;
-            lvMapping.View = gvMapping;
-
-            sp_columnMapping.Children.Add(lvMapping);
+            lv_columnMapping.ItemsSource = srcColumnConfigMapping.Values;
+            lv_excelConfig.ItemsSource = excelConfigDict.Values;
         }
 
         private Dictionary<string, string> tgtFileDict = new Dictionary<string, string>();
@@ -81,12 +81,16 @@ namespace excel_data_transfer
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "Excel files (*.xls,*.xlsx)|*.xls;*.xlsx";
+            dlg.Multiselect = true;
 
             Nullable<bool> result = dlg.ShowDialog();
             if (result == true)
             {
-                sp_targetFileNames.Children.Add(new TextBlock() { Text = dlg.SafeFileName });
-                tgtFileDict.Add(dlg.SafeFileName, dlg.FileName);
+                for (int i = 0; i < dlg.SafeFileNames.Length; i++)
+                {
+                    sp_targetFileNames.Children.Add(new TextBlock() { Text = dlg.SafeFileNames[i] });
+                    tgtFileDict.Add(dlg.SafeFileNames[i], dlg.FileNames[i]);
+                }
             }
         }
 
@@ -94,38 +98,61 @@ namespace excel_data_transfer
         {
             OpenFileDialog dlg = new OpenFileDialog();
             dlg.Filter = "Excel files (*.xls,*.xlsx)|*.xls;*.xlsx";
+            dlg.Multiselect = true;
 
             Nullable<bool> result = dlg.ShowDialog();
             if (result == true)
             {
-                sp_sourceFileNames.Children.Add(new TextBlock() { Text = dlg.SafeFileName });
-                readExcelToDatabase(dlg, sourceDatabase);
+                for (int i = 0; i < dlg.SafeFileNames.Length; i++)
+                {
+                    sp_sourceFileNames.Children.Add(new TextBlock() { Text = dlg.SafeFileNames[i] });
+                    readExcelToDatabase(dlg.FileNames[i], dlg.SafeFileNames[i], sourceDatabase);
+                }
             }
         }
 
-        private Dictionary<string, Dictionary<string, object>> sourceDatabase = new Dictionary<string, Dictionary<string, object>>();
+        private Dictionary<string, Dictionary<string, ICell>> sourceDatabase = new Dictionary<string, Dictionary<string, ICell>>();
 
-        private void readExcelToDatabase(OpenFileDialog dlg, Dictionary<string, Dictionary<string, object>> databse)
+        private void readExcelToDatabase(string fileName, string safeFileName, Dictionary<string, Dictionary<string, ICell>> databse)
         {
-            stepThroughExcel(dlg.FileName, (Dictionary<string, object> extractedRow, string rowKey, List<ICell> headerCells, List<ICell> cells) =>
+            stepThroughExcel(fileName, safeFileName, keyMapping.SourceNames, true, (string rowKey, List<ICell> headerCells, List<ICell> cells) =>
             {
-                if (extractedRow == null)
+                Dictionary<string, ICell> extractedRow;
+                if (!sourceDatabase.ContainsKey(rowKey))
                 {
-                    sourceDatabase.Add(rowKey, (extractedRow = new Dictionary<string, object>()));
+                    sourceDatabase.Add(rowKey, (extractedRow = new Dictionary<string, ICell>()));
                 }
-                extractDataToRow(dlg.SafeFileName, headerCells, cells, extractedRow);
+                else 
+                {
+                    extractedRow = sourceDatabase[rowKey];
+                }
+                extractDataToRow(safeFileName, headerCells, cells, extractedRow);
             },
             null);
         }
 
-        private void stepThroughExcel(string fileName, Action<Dictionary<string, object>, string, List<ICell>, List<ICell>> action, Action<IWorkbook> finish)
+        private void stepThroughExcel(string fullFileName, string breifFileName, string[] keyColumnNames, bool skipTitle, Action<string, List<ICell>, List<ICell>> action, Action<IWorkbook> finish)
         {
-            using (FileStream stream = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+            using (FileStream stream = new FileStream(fullFileName, FileMode.Open, FileAccess.Read))
             {
-                IWorkbook workbook = new HSSFWorkbook(stream);
+                IWorkbook workbook;
+                if (fullFileName.EndsWith(".xlsx"))
+                {
+                    workbook = new NPOI.XSSF.UserModel.XSSFWorkbook(stream);
+                }
+                else 
+                {
+                    workbook = new HSSFWorkbook(stream);
+                }
                 ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
-                List<ICell> headerCells = hs.GetRow(0).Cells;
-                int keyColumn = getKeyColumnIndex(headerCells, keyMapping.SourceFile);
+
+                int headerRow = 0;
+                if(skipTitle&&excelConfigDict.ContainsKey(breifFileName))
+                {
+                    headerRow=excelConfigDict[breifFileName].HeaderRow-1;
+                }
+                List<ICell> headerCells = hs.GetRow(headerRow).Cells;
+                int keyColumn = getKeyColumnIndex(headerCells, keyColumnNames);
 
                 IEnumerator rowEnumerator = hs.GetRowEnumerator();
                 rowEnumerator.MoveNext();//跳过列首
@@ -133,8 +160,7 @@ namespace excel_data_transfer
                 {
                     List<ICell> cells = ((IRow)rowEnumerator.Current).Cells;
                     string rowKey = cells[keyColumn].StringCellValue;
-                    Dictionary<string, object> extractedRow = sourceDatabase[rowKey];
-                    action(extractedRow, rowKey, headerCells, cells);
+                    action(rowKey, headerCells, cells);
                 }
 
                 if (finish != null) 
@@ -144,16 +170,22 @@ namespace excel_data_transfer
             }
         }
 
-        private void extractDataToRow(string fileName, List<ICell> headerCells, List<ICell> cells, Dictionary<string, object> extractedRow)
+        private void extractDataToRow(string fileName, List<ICell> headerCells, List<ICell> cells, Dictionary<string, ICell> extractedRow)
         {
             for (int i = 0; i < cells.Count; i++)
             {
                 ICell header = headerCells[i];
                 string headerName = header.ToString();
-                ColumnMapping columnMappingConfig = srcColumnConfigMapping[headerName];
-                if (columnMappingConfig.SourceFile == fileName)
+                if (srcColumnConfigMapping.ContainsKey(headerName))
                 {
-                    extractedRow.Add(columnMappingConfig.TargetName, cells[i].StringCellValue);
+                    ColumnMapping columnMappingConfig = srcColumnConfigMapping[headerName];
+                    if (columnMappingConfig.SourceFile == fileName)
+                    {
+                        foreach (var name in columnMappingConfig.TargetNames)
+                        {
+                            extractedRow.Add(name, cells[i]);
+                        }
+                    }
                 }
             }
         }
@@ -162,16 +194,36 @@ namespace excel_data_transfer
         {
             foreach (KeyValuePair<string,string> tgtFile in tgtFileDict)
             {
-                stepThroughExcel(tgtFile.Value, (Dictionary<string, object> extractedRow, string rowKey, List<ICell> headerCells, List<ICell> cells) =>
+                stepThroughExcel(tgtFile.Value, tgtFile.Key, keyMapping.TargetNames, true, (string rowKey, List<ICell> headerCells, List<ICell> cells) =>
                 {
+                    if (sourceDatabase.ContainsKey(rowKey)) { 
+                    Dictionary<string, ICell> extractedRow = sourceDatabase[rowKey];
                     for (int i = 0; i < cells.Count; i++)
                     {
-                        object srcValue = extractedRow[headerCells[i].StringCellValue];
-                        if (srcValue != null)
+                        if (extractedRow.ContainsKey(headerCells[i].StringCellValue))
                         {
-                            cells[i].SetCellValue(srcValue.ToString());
+                            ICell srcValue = extractedRow[headerCells[i].StringCellValue];
+                            switch (srcValue.CellType)
+                            {
+                                case CellType.Boolean:
+                                    cells[i].SetCellValue(srcValue.BooleanCellValue);
+                                    break;
+                                case CellType.Numeric:
+                                    cells[i].SetCellValue(srcValue.NumericCellValue);
+                                    break;
+                                case CellType.String:
+                                    cells[i].SetCellValue(srcValue.StringCellValue);
+                                    break;
+                                case CellType.Blank:
+                                    cells[i].SetCellValue(srcValue.StringCellValue);
+                                    break;
+                                default:
+                                    cells[i].SetCellValue(srcValue.StringCellValue);
+                                    break;
+                            }
                         }
                     }
+                        }
                 }, (IWorkbook workbook) => 
                 {
                     FileStream writeStream = new FileStream(targetFolder+"/"+tgtFile.Key, FileMode.OpenOrCreate, FileAccess.Write);
@@ -181,19 +233,20 @@ namespace excel_data_transfer
             }
         }
 
-        private int getKeyColumnIndex(List<ICell> headerCells, string keyColumnName)
+        private int getKeyColumnIndex(List<ICell> headerCells, string[] keyColumnNames)
         {
-            int keyColumn = -1;
             for (int i = 0; i < headerCells.Count; i++)
             {
                 string columnName = headerCells[i].StringCellValue;
-                if (columnName == keyColumnName)
+                foreach (string name in keyColumnNames)
                 {
-                    keyColumn = i;
-                    break;
+                    if (name == columnName)
+                    {
+                        return i;
+                    }
                 }
             }
-            return keyColumn;
+            return -1;
         }
 
         private string targetFolder;
