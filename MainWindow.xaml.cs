@@ -59,8 +59,7 @@ namespace excel_data_transfer
                     foreach (string srcColumn in columnMapping.SourceNames)
                     {
                         srcColumnConfigMapping.Add(srcColumn, columnMapping);
-                    }
-                    
+                    } 
                 }
             }
 
@@ -68,7 +67,7 @@ namespace excel_data_transfer
             for (int i = 0; i < excelConfigs.Length; i++)
             {
                 string[] configInfo = excelConfigs[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-                ExcelConfig tgtConfig = new ExcelConfig() { FileName=configInfo[0], HeaderRow=int.Parse(configInfo[1]) };
+                ExcelConfig tgtConfig = new ExcelConfig() { FileName=configInfo[0], HeaderRow=int.Parse(configInfo[1]), SheetIndex=int.Parse(configInfo[2]) };
                 excelConfigDict.Add(tgtConfig.FileName, tgtConfig);
             }
 
@@ -144,7 +143,13 @@ namespace excel_data_transfer
                 {
                     workbook = new HSSFWorkbook(stream);
                 }
-                ISheet hs = workbook.GetSheet(workbook.GetSheetName(0));
+
+                int sheetIndex = 1;
+                if (excelConfigDict.ContainsKey(breifFileName)) 
+                {
+                    sheetIndex = excelConfigDict[breifFileName].SheetIndex;
+                }
+                ISheet hs = workbook.GetSheet(workbook.GetSheetName(sheetIndex - 1));
 
                 int headerRow = 0;
                 if(skipTitle&&excelConfigDict.ContainsKey(breifFileName))
@@ -160,6 +165,10 @@ namespace excel_data_transfer
                 {
                     List<ICell> cells = ((IRow)rowEnumerator.Current).Cells;
                     string rowKey = cells[keyColumn].StringCellValue;
+                    if (string.IsNullOrEmpty(rowKey)) 
+                    {
+                        continue;
+                    }
                     action(rowKey, headerCells, cells);
                 }
 
@@ -192,45 +201,50 @@ namespace excel_data_transfer
 
         private void btn_transfer_Click(object sender, RoutedEventArgs e)
         {
+            btn_transfer.Content = "处理中...";
+            int handleProgress = 0;
             foreach (KeyValuePair<string,string> tgtFile in tgtFileDict)
             {
                 stepThroughExcel(tgtFile.Value, tgtFile.Key, keyMapping.TargetNames, true, (string rowKey, List<ICell> headerCells, List<ICell> cells) =>
                 {
-                    if (sourceDatabase.ContainsKey(rowKey)) { 
-                    Dictionary<string, ICell> extractedRow = sourceDatabase[rowKey];
-                    for (int i = 0; i < cells.Count; i++)
+                    if (sourceDatabase.ContainsKey(rowKey))
                     {
-                        if (extractedRow.ContainsKey(headerCells[i].StringCellValue))
+                        Dictionary<string, ICell> extractedRow = sourceDatabase[rowKey];
+                        for (int i = 0; i < cells.Count && i < headerCells.Count; i++)
                         {
-                            ICell srcValue = extractedRow[headerCells[i].StringCellValue];
-                            switch (srcValue.CellType)
+                            if (extractedRow.ContainsKey(headerCells[i].StringCellValue))
                             {
-                                case CellType.Boolean:
-                                    cells[i].SetCellValue(srcValue.BooleanCellValue);
-                                    break;
-                                case CellType.Numeric:
-                                    cells[i].SetCellValue(srcValue.NumericCellValue);
-                                    break;
-                                case CellType.String:
-                                    cells[i].SetCellValue(srcValue.StringCellValue);
-                                    break;
-                                case CellType.Blank:
-                                    cells[i].SetCellValue(srcValue.StringCellValue);
-                                    break;
-                                default:
-                                    cells[i].SetCellValue(srcValue.StringCellValue);
-                                    break;
+                                ICell srcValue = extractedRow[headerCells[i].StringCellValue];
+                                switch (srcValue.CellType)
+                                {
+                                    case CellType.Boolean:
+                                        cells[i].SetCellValue(srcValue.BooleanCellValue);
+                                        break;
+                                    case CellType.Numeric:
+                                        cells[i].SetCellValue(srcValue.NumericCellValue);
+                                        break;
+                                    case CellType.String:
+                                        cells[i].SetCellValue(srcValue.StringCellValue);
+                                        break;
+                                    case CellType.Blank:
+                                        cells[i].SetCellValue(srcValue.StringCellValue);
+                                        break;
+                                    default:
+                                        cells[i].SetCellValue(srcValue.StringCellValue);
+                                        break;
+                                }
                             }
                         }
                     }
-                        }
-                }, (IWorkbook workbook) => 
+                }, (IWorkbook workbook) =>
                 {
-                    FileStream writeStream = new FileStream(targetFolder+"/"+tgtFile.Key, FileMode.OpenOrCreate, FileAccess.Write);
+                    FileStream writeStream = new FileStream(targetFolder + "/" + tgtFile.Key, FileMode.OpenOrCreate, FileAccess.Write);
                     workbook.Write(writeStream);
                     writeStream.Close();
                 });
+                txt_handleProgress.Text = (handleProgress++) + "/" + tgtFileDict.Count;
             }
+            btn_transfer.Content = "处理完成";
         }
 
         private int getKeyColumnIndex(List<ICell> headerCells, string[] keyColumnNames)

@@ -28,7 +28,7 @@
         </Border>
         <Button Content="Start" x:Name="btn_transfer" HorizontalAlignment="Left" Margin="296.028,24.334,0,0" VerticalAlignment="Top" Width="75" Click="btn_transfer_Click"/>
         <Label Content="处理进度:" HorizontalAlignment="Left" Margin="403.453,21.094,0,0" VerticalAlignment="Top"/>
-        <TextBlock x:Name="txt_transfer" HorizontalAlignment="Left" Margin="466.357,28.401,0,0" TextWrapping="Wrap" Text="0/0" VerticalAlignment="Top"/>
+        <TextBlock x:Name="txt_handleProgress" HorizontalAlignment="Left" Margin="466.357,26.401,0,0" TextWrapping="Wrap" Text="0/0" VerticalAlignment="Top"/>
         <Label Content="输出文件夹:" HorizontalAlignment="Left" Margin="692.477,361.286,0,0" VerticalAlignment="Top"/>
         <TextBlock x:Name="txt_targetFolder" HorizontalAlignment="Left" Margin="765.367,366.807,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
 
