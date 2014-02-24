@@ -242,7 +242,7 @@ namespace excel_data_transfer
                     workbook.Write(writeStream);
                     writeStream.Close();
                 });
-                txt_handleProgress.Text = (handleProgress++) + "/" + tgtFileDict.Count;
+                txt_handleProgress.Text = (++handleProgress) + "/" + tgtFileDict.Count;
             }
             btn_transfer.Content = "处理完成";
         }
