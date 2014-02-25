@@ -51,11 +51,11 @@ namespace excel_data_transfer
                 string[] configInfo = mappingConfigs[i].Split(new char[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
                 if (keyMapping == null)
                 {
-                    keyMapping = new ColumnMapping() { SourceFile = configInfo[0], SourceNames = configInfo[1].Split('|'), TargetNames = configInfo[2].Split('|') };
+                    keyMapping = new ColumnMapping() { SourceFile = configInfo[0], SourceName = configInfo[1], TargetName = configInfo[2] };
                 }
                 else
                 {
-                    ColumnMapping columnMapping = new ColumnMapping() { SourceFile = configInfo[0], SourceNames = configInfo[1].Split('|'), TargetNames = configInfo[2].Split('|') };
+                    ColumnMapping columnMapping = new ColumnMapping() { SourceFile = configInfo[0], SourceName = configInfo[1], TargetName = configInfo[2] };
                     foreach (string srcColumn in columnMapping.SourceNames)
                     {
                         srcColumnConfigMapping.Add(srcColumn, columnMapping);
@@ -71,6 +71,7 @@ namespace excel_data_transfer
                 excelConfigDict.Add(tgtConfig.FileName, tgtConfig);
             }
 
+            lv_keyColumnMapping.ItemsSource = new List<ColumnMapping>(){ keyMapping };
             lv_columnMapping.ItemsSource = srcColumnConfigMapping.Values;
             lv_excelConfig.ItemsSource = excelConfigDict.Values;
         }

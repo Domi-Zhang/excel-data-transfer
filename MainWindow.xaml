@@ -10,12 +10,21 @@
         <Button Content="选择输出文件夹" Height="22" HorizontalAlignment="Left" Margin="695.465,334.289,0,0"
         	x:Name="btn_addTgtFolder" VerticalAlignment="Top" Width="94.911" RenderTransformOrigin="0.792,0.535" Click="btn_addTgtFolder_Click"/>
 
-        <ListView HorizontalAlignment="Left" Height="363.993" Margin="296.028,61,0,0" VerticalAlignment="Top" Width="391.449" x:Name="lv_columnMapping">
+        <ListView HorizontalAlignment="Left" Height="43.015" Margin="297.028,61,0,0" VerticalAlignment="Top" Width="388.463" x:Name="lv_keyColumnMapping">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn DisplayMemberBinding="{Binding SourceFile, Mode=TwoWay}" Header="源文件名"/>
-                    <GridViewColumn DisplayMemberBinding="{Binding SourceName, Mode=TwoWay}" Header="源列名"/>
-                    <GridViewColumn DisplayMemberBinding="{Binding TargetName, Mode=TwoWay}" Header="目标列名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding SourceName, Mode=OneWay}" Header="源列名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding TargetName, Mode=OneWay}" Header="目标列名"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <ListView HorizontalAlignment="Left" Height="328.97" Margin="296.028,113.015,0,0" VerticalAlignment="Top" Width="391.449" x:Name="lv_columnMapping">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn DisplayMemberBinding="{Binding SourceFile, Mode=OneWay}" Header="源文件名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding SourceName, Mode=OneWay}" Header="源列名"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding TargetName, Mode=OneWay}" Header="目标列名"/>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -32,11 +41,12 @@
         <Label Content="输出文件夹:" HorizontalAlignment="Left" Margin="692.477,361.286,0,0" VerticalAlignment="Top"/>
         <TextBlock x:Name="txt_targetFolder" HorizontalAlignment="Left" Margin="765.367,366.807,0,0" TextWrapping="Wrap" VerticalAlignment="Top"/>
 
-        <ListView HorizontalAlignment="Left" Height="197.015" Margin="296.028,442.985,0,0" VerticalAlignment="Top" Width="388.463" x:Name="lv_excelConfig">
+        <ListView HorizontalAlignment="Left" Height="197.015" Margin="296.028,450.985,0,0" VerticalAlignment="Top" Width="388.463" x:Name="lv_excelConfig">
             <ListView.View>
                 <GridView>
                     <GridViewColumn DisplayMemberBinding="{Binding FileName, Mode=TwoWay}" Header="文件名"/>
-                    <GridViewColumn DisplayMemberBinding="{Binding TitleRow, Mode=TwoWay}" Header="标题行号(0表示无标题)"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding SheetIndex, Mode=TwoWay}" Header="Sheet位置"/>
+                    <GridViewColumn DisplayMemberBinding="{Binding HeaderRow, Mode=TwoWay}" Header="头行号"/>
                 </GridView>
             </ListView.View>
         </ListView>
